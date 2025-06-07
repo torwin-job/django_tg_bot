@@ -2,76 +2,26 @@ from .models import Post
 from users.models import User
 from django.shortcuts import get_object_or_404
 from typing import List, Dict, Any
+from asgiref.sync import sync_to_async
 
-def get_all_posts() -> List[Dict[str, Any]]:
-    """
-    Получение списка всех постов.
-    
-    Returns:
-        List[Dict[str, Any]]: Список постов с информацией об авторе
-    """
-    posts = Post.objects.all().order_by('-created_at')
-    return [
-        {
-            'id': post.id,
-            'title': post.title,
-            'content': post.content,
-            'author': post.author.username,
-            'created_at': post.created_at.isoformat()
-        }
-        for post in posts
-    ]
+@sync_to_async
+def get_all_posts():
+    """Получение всех постов с предзагрузкой автора"""
+    return list(Post.objects.select_related('author').all())
 
-def get_post_by_id(post_id: int) -> Dict[str, Any]:
-    """
-    Получение поста по ID.
-    
-    Args:
-        post_id (int): ID поста
-        
-    Returns:
-        Dict[str, Any]: Информация о посте
-        
-    Raises:
-        Post.DoesNotExist: Если пост не найден
-    """
-    post = get_object_or_404(Post, id=post_id)
-    return {
-        'id': post.id,
-        'title': post.title,
-        'content': post.content,
-        'author': post.author.username,
-        'created_at': post.created_at.isoformat()
-    }
+@sync_to_async
+def get_post_by_id(post_id):
+    """Получение поста по ID с предзагрузкой автора"""
+    return Post.objects.select_related('author').get(id=post_id)
 
-def create_post(user_id: int, title: str, content: str) -> Dict[str, Any]:
-    """
-    Создание нового поста.
-    
-    Args:
-        user_id (int): ID пользователя-автора
-        title (str): Заголовок поста
-        content (str): Содержание поста
-        
-    Returns:
-        Dict[str, Any]: Созданный пост
-        
-    Raises:
-        User.DoesNotExist: Если пользователь не найден
-    """
-    author = get_object_or_404(User, id=user_id)
-    post = Post.objects.create(
+@sync_to_async
+def create_post(author_id, title, content):
+    """Создание нового поста"""
+    return Post.objects.create(
+        author_id=author_id,
         title=title,
-        content=content,
-        author=author
+        content=content
     )
-    return {
-        'id': post.id,
-        'title': post.title,
-        'content': post.content,
-        'author': post.author.username,
-        'created_at': post.created_at.isoformat()
-    }
 
 def update_post(post_id: int, user_id: int, title: str = None, content: str = None) -> Dict[str, Any]:
     """
