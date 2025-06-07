@@ -74,7 +74,7 @@ python manage.py runserver
 
 2. В отдельном терминале запустите бота:
 ```bash
-python manage.py run_bot
+python manage.py runbot
 ```
 
 ## API Endpoints
