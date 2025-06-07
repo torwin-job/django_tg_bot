@@ -13,7 +13,7 @@
 ## Технологии
 
 - Python 3.8+
-- Django 4.2+
+- Django 5.0+
 - Django Ninja
 - python-telegram-bot
 - SQLite (для разработки)
