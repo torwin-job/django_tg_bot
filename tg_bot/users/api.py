@@ -4,7 +4,7 @@ from .models import User
 from .services import create_user, authenticate_user, get_user_by_id
 from django.conf import settings
 import jwt
-from .schemas import UserSchema, UserCreateSchema, LoginSchema, TokenSchema, ErrorSchema,RefreshSchema
+from .schemas import UserSchema, UserCreateSchema, LoginSchema, TokenSchema, ErrorSchema, RefreshSchema
 from django.contrib.auth import authenticate
 from typing import Optional
 from datetime import datetime, timedelta
@@ -37,7 +37,11 @@ def register(request, data: UserCreateSchema):
     """
     try:
         user = create_user(data.username, data.password, data.email)
-        return 201, user
+        return 201, {
+            "id": user.id,
+            "username": user.username,
+            "email": user.email
+        }
     except Exception as e:
         return 400, {"detail": str(e)}
 
@@ -56,7 +60,7 @@ def login(request, payload: LoginSchema):
     """
     user = authenticate(username=payload.username, password=payload.password)
     if user is None:
-        return 401, {"message": "Неверные учетные данные"}
+        return 401, {"detail": "Неверные учетные данные"}
     
     # Создаем токены
     access_token = jwt.encode(
@@ -64,8 +68,8 @@ def login(request, payload: LoginSchema):
             'user_id': user.id,
             'exp': datetime.utcnow() + timedelta(minutes=60)
         },
-        settings.SECRET_KEY,
-        algorithm='HS256'
+        settings.SIMPLE_JWT['SIGNING_KEY'],
+        algorithm=settings.SIMPLE_JWT['ALGORITHM']
     )
     
     refresh_token = jwt.encode(
@@ -73,8 +77,8 @@ def login(request, payload: LoginSchema):
             'user_id': user.id,
             'exp': datetime.utcnow() + timedelta(days=7)
         },
-        settings.SECRET_KEY,
-        algorithm='HS256'
+        settings.SIMPLE_JWT['SIGNING_KEY'],
+        algorithm=settings.SIMPLE_JWT['ALGORITHM']
     )
     
     return 200, {

@@ -4,7 +4,7 @@ from typing import Optional, Dict, Any
 
 User = get_user_model()
 
-def create_user(username: str, email: str, password: str) -> User:
+def create_user(username: str, password: str, email: str) -> User:
     """
     Создает нового пользователя с указанными данными.
     """
