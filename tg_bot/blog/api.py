@@ -57,7 +57,7 @@ def list_posts(request):
     - **created_at**: Дата создания
     """
     posts = get_all_posts()
-    return 200, [
+    return [
         {
             "id": post.id,
             "title": post.title,
@@ -85,7 +85,7 @@ def get_post(request, post_id: int):
     """
     try:
         post = get_post_by_id(post_id)
-        return 200, {
+        return {
             "id": post.id,
             "title": post.title,
             "content": post.content,
@@ -100,18 +100,28 @@ def create_new_post(request, data: PostCreateSchema):
     """
     Создание нового поста.
     
-    Требуется аутентификация.
-    
+    Args:
     - **title**: Заголовок поста
     - **content**: Содержание поста
     
-    Возвращает созданный пост.
+    Returns:
+    - **id**: ID поста
+    - **title**: Заголовок
+    - **content**: Содержание
+    - **author**: Имя автора
+    - **created_at**: Дата создания
     """
     try:
         post = create_post(request.auth, data.title, data.content)
-        return 201, post
+        return 201, {
+            "id": post.id,
+            "title": post.title,
+            "content": post.content,
+            "author": post.author.username,
+            "created_at": post.created_at.strftime("%Y-%m-%d %H:%M:%S")
+        }
     except Exception as e:
-        return 400, {"detail": str(e)}
+        return 400, {"message": str(e)}
 
 @router.put("/posts/{post_id}", response={200: PostSchema, 400: ErrorSchema, 404: ErrorSchema}, summary="Обновление поста")
 def update_existing_post(request, post_id: int, data: PostUpdateSchema):

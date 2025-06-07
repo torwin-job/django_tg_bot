@@ -25,3 +25,6 @@ class TokenSchema(Schema):
 
 class ErrorSchema(Schema):
     detail: str 
+
+class RefreshSchema(Schema):
+    refresh: str

@@ -1,10 +1,14 @@
-from ninja import Router
+from ninja import Router, Schema
 from ninja.security import HttpBearer
 from .models import User
 from .services import create_user, authenticate_user, get_user_by_id
 from django.conf import settings
 import jwt
-from .schemas import UserSchema, UserCreateSchema, LoginSchema, TokenSchema, ErrorSchema
+from .schemas import UserSchema, UserCreateSchema, LoginSchema, TokenSchema, ErrorSchema,RefreshSchema
+from django.contrib.auth import authenticate
+from typing import Optional
+from datetime import datetime, timedelta
+
 
 class AuthBearer(HttpBearer):
     def authenticate(self, request, token):
@@ -37,26 +41,49 @@ def register(request, data: UserCreateSchema):
     except Exception as e:
         return 400, {"detail": str(e)}
 
-@router.post("/login", response={200: TokenSchema, 400: ErrorSchema}, auth=None, summary="Вход в систему")
-def login(request, data: LoginSchema):
+@router.post("/login", response={200: TokenSchema, 401: ErrorSchema}, auth=None, summary="Авторизация пользователя")
+def login(request, payload: LoginSchema):
     """
-    Вход в систему.
+    Авторизация пользователя.
     
+    Args:
     - **username**: Имя пользователя
     - **password**: Пароль
     
-    Возвращает JWT токены:
-    - **access**: Токен доступа
-    - **refresh**: Токен обновления
+    Returns:
+    - **access**: JWT токен доступа
+    - **refresh**: JWT токен обновления
     """
-    try:
-        tokens = authenticate_user(data.username, data.password)
-        return 200, tokens
-    except Exception as e:
-        return 400, {"detail": str(e)}
+    user = authenticate(username=payload.username, password=payload.password)
+    if user is None:
+        return 401, {"message": "Неверные учетные данные"}
+    
+    # Создаем токены
+    access_token = jwt.encode(
+        {
+            'user_id': user.id,
+            'exp': datetime.utcnow() + timedelta(minutes=60)
+        },
+        settings.SECRET_KEY,
+        algorithm='HS256'
+    )
+    
+    refresh_token = jwt.encode(
+        {
+            'user_id': user.id,
+            'exp': datetime.utcnow() + timedelta(days=7)
+        },
+        settings.SECRET_KEY,
+        algorithm='HS256'
+    )
+    
+    return 200, {
+        "access": access_token,
+        "refresh": refresh_token
+    }
 
 @router.post("/refresh", response={200: TokenSchema, 400: ErrorSchema}, auth=None, summary="Обновление токена")
-def refresh_token(request, data: TokenSchema):
+def refresh_token(request, data: RefreshSchema):
     """
     Обновление токена доступа.
     

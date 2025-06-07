@@ -26,7 +26,7 @@ api = NinjaAPI(
     title=settings.API_TITLE,
     description=settings.API_DESCRIPTION,
     version=settings.API_VERSION,
-    csrf=True
+    csrf=False
 )
 
 # Подключаем API приложений к основному роутеру
