@@ -2,19 +2,15 @@ from .models import Post
 from users.models import User
 from django.shortcuts import get_object_or_404
 from typing import List, Dict, Any
-from asgiref.sync import sync_to_async
 
-@sync_to_async
 def get_all_posts():
     """Получение всех постов с предзагрузкой автора"""
     return list(Post.objects.select_related('author').all())
 
-@sync_to_async
 def get_post_by_id(post_id):
     """Получение поста по ID с предзагрузкой автора"""
     return Post.objects.select_related('author').get(id=post_id)
 
-@sync_to_async
 def create_post(author_id, title, content):
     """Создание нового поста"""
     return Post.objects.create(

@@ -3,6 +3,7 @@ from telegram.ext import Application, CommandHandler, CallbackQueryHandler, Cont
 from telegram.error import BadRequest
 import os
 from dotenv import load_dotenv
+from asgiref.sync import sync_to_async
 from .services import get_all_posts, get_post_by_id
 
 # Загружаем переменные окружения из .env файла
@@ -42,7 +43,7 @@ class TelegramBot:
 
     async def _handle_posts(self, update: Update, context: ContextTypes.DEFAULT_TYPE, is_callback: bool = False):
         """Обработчик команды /posts"""
-        posts = await get_all_posts()
+        posts = await sync_to_async(get_all_posts)()
         if not posts:
             message = "😔 Пока нет доступных постов."
             if is_callback:
@@ -105,7 +106,7 @@ class TelegramBot:
         
         if query.data.startswith("post_"):
             post_id = int(query.data.split('_')[1])
-            post = await get_post_by_id(post_id)
+            post = await sync_to_async(get_post_by_id)(post_id)
             
             keyboard = [
                 [InlineKeyboardButton("🔙 Назад", callback_data="back_to_list")]

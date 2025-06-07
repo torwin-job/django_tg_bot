@@ -4,7 +4,9 @@ from .models import Post
 from .services import get_all_posts, get_post_by_id, create_post, update_post, delete_post
 from django.conf import settings
 import jwt
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
+from django.shortcuts import get_object_or_404
+from datetime import datetime
 
 class AuthBearer(HttpBearer):
     def authenticate(self, request, token):
@@ -37,7 +39,7 @@ class PostUpdateSchema(Schema):
     content: Optional[str] = None
 
 class ErrorSchema(Schema):
-    detail: str
+    message: str
 
 # Создаем роутер вместо API
 router = Router(auth=AuthBearer(), tags=["Блог"])
@@ -47,23 +49,34 @@ def list_posts(request):
     """
     Получение списка всех постов.
     
-    Возвращает массив постов с полями:
+    Returns:
     - **id**: ID поста
     - **title**: Заголовок
     - **content**: Содержание
     - **author**: Имя автора
     - **created_at**: Дата создания
     """
-    return 200, get_all_posts()
+    posts = get_all_posts()
+    return 200, [
+        {
+            "id": post.id,
+            "title": post.title,
+            "content": post.content,
+            "author": post.author.username,
+            "created_at": post.created_at.strftime("%Y-%m-%d %H:%M:%S")
+        }
+        for post in posts
+    ]
 
 @router.get("/posts/{post_id}", response={200: PostSchema, 404: ErrorSchema}, auth=None, summary="Получение поста по ID")
 def get_post(request, post_id: int):
     """
-    Получение информации о конкретном посте.
+    Получение поста по ID.
     
+    Args:
     - **post_id**: ID поста
     
-    Возвращает:
+    Returns:
     - **id**: ID поста
     - **title**: Заголовок
     - **content**: Содержание
@@ -72,9 +85,15 @@ def get_post(request, post_id: int):
     """
     try:
         post = get_post_by_id(post_id)
-        return 200, post
-    except Post.DoesNotExist:
-        return 404, {"detail": "Пост не найден"}
+        return 200, {
+            "id": post.id,
+            "title": post.title,
+            "content": post.content,
+            "author": post.author.username,
+            "created_at": post.created_at.strftime("%Y-%m-%d %H:%M:%S")
+        }
+    except Exception as e:
+        return 404, {"message": str(e)}
 
 @router.post("/posts", response={201: PostSchema, 400: ErrorSchema}, summary="Создание нового поста")
 def create_new_post(request, data: PostCreateSchema):
