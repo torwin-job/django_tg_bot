@@ -141,9 +141,9 @@ def update_existing_post(request, post_id: int, data: PostUpdateSchema):
         post = update_post(post_id, request.auth, data.title, data.content)
         return 200, post
     except Post.DoesNotExist:
-        return 404, {"detail": "Пост не найден"}
+        return 404, {"message": "Пост не найден"}
     except Exception as e:
-        return 400, {"detail": str(e)}
+        return 400, {"message": str(e)}
 
 @router.delete("/posts/{post_id}", response={204: None, 400: ErrorSchema, 404: ErrorSchema}, summary="Удаление поста")
 def delete_existing_post(request, post_id: int):
@@ -161,7 +161,7 @@ def delete_existing_post(request, post_id: int):
         delete_post(post_id, request.auth)
         return 204, None
     except Post.DoesNotExist:
-        return 404, {"detail": "Пост не найден"}
+        return 404, {"message": "Пост не найден"}
     except Exception as e:
-        return 400, {"detail": str(e)}
+        return 400, {"message": str(e)}
 
